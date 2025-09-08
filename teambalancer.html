@@ -1,56 +1,112 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Балансировщик Команд</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #000000;
-            color: #f8fafc;
+            background-color: #111827;
+            color: #f9fafb;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            padding: 2rem;
+            align-items: center;
             min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            box-sizing: border-box;
         }
+
         .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
             width: 100%;
             max-width: 1200px;
-            display: grid;
-            gap: 2rem;
-            grid-template-columns: 1fr;
         }
-        @media (min-width: 1024px) {
-            .container {
-                grid-template-columns: 1fr 2fr;
-            }
+
+        .panel {
+            background-color: #1f2937;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
         }
-        .card {
-            background-color: #1a1a1a;
-            padding: 2rem;
-            border-radius: 12px;
+
+        .login-panel {
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        h1, h2 {
+            font-weight: 600;
+            color: #f9fafb;
+            margin-top: 0;
+        }
+
+        .login-screen {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        .login-screen p {
+            font-size: 1rem;
+            color: #d1d5db;
+        }
+
+        .login-btn {
+            background-color: #fde047;
+            color: #111827;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
+        .login-btn:hover {
+            background-color: #facc15;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 400;
+            color: #d1d5db;
+        }
+
         input, select {
-            background-color: #1a1a1a;
+            background-color: #1f2937;
             border: 1px solid #333333;
-            color: #f8fafc;
+            color: #f9fafb;
             padding: 0.75rem;
             border-radius: 8px;
             width: 100%;
             transition: all 0.2s ease-in-out;
+            box-sizing: border-box;
         }
+
         input:focus, select:focus {
             outline: none;
             border-color: #fde047;
             box-shadow: 0 0 0 2px #fde047;
         }
+
         button {
             background-color: #1a1a1a;
-            color: #f8fafc;
+            color: #f9fafb;
             padding: 0.75rem 1.5rem;
             border-radius: 8px;
             font-weight: 600;
@@ -58,27 +114,11 @@
             transition: all 0.2s;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #333333;
         }
-        .results h2 {
-            margin-bottom: 1rem;
-        }
-        .team-card {
-            background-color: #1a1a1a;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-        }
-        .team-card h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        .error-message {
-            color: #ef4444;
-            margin-top: 1rem;
-        }
+        
         .delete-btn {
             background: none;
             border: none;
@@ -88,849 +128,466 @@
             transition: color 0.2s;
             line-height: 1;
         }
+
         .delete-btn:hover {
             color: #fde047;
         }
-        .login-screen {
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .player-input-group {
             display: flex;
-            flex-direction: column;
+            gap: 1rem;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            height: 100vh;
-        }
-        .login-screen button {
-            padding: 1rem 2rem;
-            font-size: 1.25rem;
-        }
-        .admin-panel {
-            background-color: #2a2a2a;
-            margin-top: 2rem;
-            padding: 1rem;
-            border-radius: 8px;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="login-screen" class="login-screen">
-        <h1 class="text-4xl font-bold mb-8">Балансировщик Команд</h1>
-        <p class="text-lg mb-6 text-gray-400">Пожалуйста, войдите, чтобы получить доступ.</p>
-        <button onclick="signInWithGoogle()">Войти через Google</button>
-    </div>
-
-    <div id="access-pending" class="login-screen hidden">
-        <h1 class="text-4xl font-bold mb-8">Запрос на доступ отправлен</h1>
-        <p class="text-lg mb-6 text-gray-400">Подождите, пока администратор одобрит ваш запрос. Спасибо!</p>
-        <button onclick="signOutUser()">Выйти</button>
-    </div>
-
-    <div id="main-content" class="container lg:grid-cols-[1fr_2fr] hidden">
-        <!-- Панель управления -->
-        <div class="card">
-            <h1 class="text-3xl font-bold mb-6 text-center">Балансировщик команд</h1>
-            <p class="text-xs text-gray-400 mb-4 text-center">
-                Ваш ID пользователя: <span id="user-id">...</span>
-                <button onclick="signOutUser()" class="delete-btn float-right">Выйти</button>
-            </p>
-            
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold mb-4">Добавить игрока</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <input type="text" id="player-name" placeholder="Никнейм">
-                    <select id="player-role">
-                        <option value="Guardian">Guardian</option>
-                        <option value="Titan">Titan</option>
-                        <option value="Legend">Legend</option>
-                        <option value="Divine">Divine</option>
-                        <option value="Recruit">Recruit</option>
-                        <option value="Knight">Knight</option>
-                        <option value="Archon">Archon</option>
-                        <option value="Lord">Lord</option>
-                    </select>
-                    <input type="number" id="player-rating" placeholder="Рейтинг">
-                </div>
-                <button onclick="addPlayer()" class="w-full">Добавить игрока</button>
-            </div>
-
-            <!-- Список игроков -->
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold mb-4">Список игроков (<span id="player-count">0</span>)</h2>
-                <div id="player-list" class="space-y-2 max-h-64 overflow-y-auto">
-                    <!-- Players will be added here -->
-                </div>
-            </div>
-            
-            <div class="mb-6">
-                <label for="players-per-team" class="block mb-2 text-lg font-medium">Игроков в команде</label>
-                <input type="number" id="players-per-team" value="5" min="1">
-            </div>
-
-            <button onclick="balanceTeams()" class="w-full">Балансировать</button>
-            <p id="error-message" class="error-message hidden"></p>
-
-            <div id="admin-panel" class="admin-panel hidden">
-                <h2 class="text-xl font-semibold mb-2">Запросы на доступ</h2>
-                <div id="pending-users-list" class="space-y-2">
-                    <!-- Pending users will be listed here -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- Результаты -->
-        <div class="card results">
-            <h2 class="text-3xl font-bold mb-4 text-center">Результаты</h2>
-            <div id="results-output" class="text-lg">
-                <p class="text-center text-gray-200">Добавьте игроков и нажмите "Балансировать", чтобы увидеть результат.</p>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Firebase configuration and initialization
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-
-        // **ВАЖНО**: Замените 'nikitalodatok2005@gmail.com' на свои почты.
-        // Чтобы добавить несколько почт, используйте массив.
-        const adminEmails = ['nikitalodatok2005@gmail.com', 'почта2@example.com', 'почта3@example.com'];
-        
-        // Global variables for players list and user ID
-        let players = [];
-        let userId = '';
-
-        // Normalization factors for roles
-        const normalizationFactors = {
-            'Titan': 7,
-            'Legend': 3,
-            'Divine': 4,
-            'Recruit': 0.5,
-            'Knight': 1.7,
-            'Archon': 2.7,
-            'Lord': 4,
-            'Guardian': 1,
-        };
-
-        const roleEmojis = {
-            'Titan': '⚔️',
-            'Legend': '⭐',
-            'Divine': '👑',
-            'Recruit': '👶',
-            'Knight': '🛡️',
-            'Archon': '🏹',
-            'Lord': '🧙‍♂️',
-            'Guardian': '💎',
-        };
-
-        // Authenticate user and set up Firestore listener
-        onAuthStateChanged(auth, async (user) => {
-            const mainContent = document.getElementById('main-content');
-            const loginScreen = document.getElementById('login-screen');
-            const accessPending = document.getElementById('access-pending');
-            const adminPanel = document.getElementById('admin-panel');
-
-            if (user) {
-                userId = user.uid;
-                document.getElementById('user-id').textContent = userId;
-
-                // Check if user is an admin or approved
-                const usersRef = collection(db, `artifacts/${appId}/public/data/users`);
-                const userDocRef = doc(usersRef, user.uid);
-                
-                const isAdmin = adminEmails.includes(user.email);
-
-                if (isAdmin) {
-                    // Admin gets full access and can see all users
-                    adminPanel.classList.remove('hidden');
-                    mainContent.classList.remove('hidden');
-                    loginScreen.classList.add('hidden');
-                    accessPending.classList.add('hidden');
-                    setupAdminListener();
-                    setupFirestoreListener();
-                } else {
-                    // Check if user is already approved
-                    onSnapshot(userDocRef, (docSnap) => {
-                        if (docSnap.exists() && docSnap.data().isApproved) {
-                            mainContent.classList.remove('hidden');
-                            loginScreen.classList.add('hidden');
-                            accessPending.classList.add('hidden');
-                            adminPanel.classList.add('hidden');
-                            setupFirestoreListener();
-                        } else {
-                            // User is not approved, show pending screen
-                            mainContent.classList.add('hidden');
-                            loginScreen.classList.add('hidden');
-                            accessPending.classList.remove('hidden');
-                            // Create or update user doc for admin to approve
-                            setDoc(userDocRef, { 
-                                email: user.email, 
-                                isApproved: false, 
-                                requested_at: new Date() 
-                            }, { merge: true });
-                        }
-                    });
-                }
-            } else {
-                loginScreen.classList.remove('hidden');
-                mainContent.classList.add('hidden');
-                accessPending.classList.add('hidden');
-                adminPanel.classList.add('hidden');
-            }
-        });
-
-        async function signInWithGoogle() {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                // **ВАЖНО**: Если здесь появляется ошибка, проверьте настройки Firebase.
-                // Перейдите в Firebase Console > Authentication > Sign-in method.
-                // Убедитесь, что 'Google' включен и ваш домен 'web.app' добавлен в список 'Authorized domains'.
-                console.error("Firebase auth error:", error);
-            }
         }
 
-        async function signOutUser() {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Error signing out: ", error);
-            }
-        }
-
-        function setupAdminListener() {
-            const usersRef = collection(db, `artifacts/${appId}/public/data/users`);
-            const pendingUsersList = document.getElementById('pending-users-list');
-
-            onSnapshot(usersRef, (snapshot) => {
-                pendingUsersList.innerHTML = '';
-                snapshot.forEach(docSnap => {
-                    const user = docSnap.data();
-                    if (!user.isApproved) {
-                        const userDiv = document.createElement('div');
-                        userDiv.className = 'flex justify-between items-center p-2 rounded-lg bg-gray-700';
-                        userDiv.innerHTML = `
-                            <span>${user.email}</span>
-                            <button onclick="approveUser('${docSnap.id}')" class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Одобрить</button>
-                        `;
-                        pendingUsersList.appendChild(userDiv);
-                    }
-                });
-            });
-        }
-
-        async function approveUser(userIdToApprove) {
-            const userDocRef = doc(db, `artifacts/${appId}/public/data/users`, userIdToApprove);
-            try {
-                await setDoc(userDocRef, { isApproved: true }, { merge: true });
-            } catch (error) {
-                console.error("Error approving user:", error);
-            }
-        }
-
-        // Set up real-time listener for players from Firestore
-        function setupFirestoreListener() {
-            const playersColRef = collection(db, `artifacts/${appId}/public/data/players`);
-            onSnapshot(playersColRef, (snapshot) => {
-                players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                updatePlayerList();
-            });
+        .player-input-group input,
+        .player-input-group select {
+            flex-grow: 1;
         }
         
-        function updatePlayerList() {
-            const listContainer = document.getElementById('player-list');
-            listContainer.innerHTML = '';
-            players.forEach((player) => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex justify-between items-center bg-transparent p-2 rounded-lg transition-colors duration-200 hover:bg-gray-800';
-                playerDiv.innerHTML = `
-                    <span>${roleEmojis[player.role] || ''} ${player.name} (${player.role}): ${player.rating}</span>
-                    <button onclick="removePlayer('${player.id}')" class="delete-btn">&times;</button>
-                `;
-                listContainer.appendChild(playerDiv);
-            });
-            document.getElementById('player-count').textContent = players.length;
-        }
-        
-        // Remove player from Firestore
-        async function removePlayer(playerId) {
-            try {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, playerId));
-            } catch (error) {
-                console.error("Error removing player: ", error);
-            }
+        .list-container {
+            margin-top: 1.5rem;
         }
 
-        // Add player to Firestore
-        async function addPlayer() {
-            const name = document.getElementById('player-name').value.trim();
-            const role = document.getElementById('player-role').value;
-            const rating = parseInt(document.getElementById('player-rating').value, 10);
-            const errorMessage = document.getElementById('error-message');
-
-            if (!name || isNaN(rating) || rating <= 0) {
-                errorMessage.textContent = 'Пожалуйста, заполните все поля корректно.';
-                errorMessage.classList.remove('hidden');
-                return;
-            }
-
-            errorMessage.classList.add('hidden');
-            
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/players`), {
-                    name,
-                    role,
-                    rating,
-                    created_at: new Date()
-                });
-            } catch (error) {
-                console.error("Error adding player: ", error);
-            }
-            
-            // Clear inputs
-            document.getElementById('player-name').value = '';
-            document.getElementById('player-rating').value = '';
-        }
-        
-        function normalizeRatings(players) {
-            return players.map(player => {
-                const normalizedPlayer = { ...player };
-                const factor = normalizationFactors[player.role] || 1;
-                normalizedPlayer.normalized_rating = player.rating / factor;
-                return normalizedPlayer;
-            });
-        }
-
-        function balanceTeams() {
-            const playersPerTeam = parseInt(document.getElementById('players-per-team').value, 10);
-            const errorMessage = document.getElementById('error-message');
-
-            if (players.length === 0) {
-                errorMessage.textContent = 'Добавьте хотя бы одного игрока.';
-                errorMessage.classList.remove('hidden');
-                return;
-            }
-
-            if (playersPerTeam <= 0) {
-                errorMessage.textContent = 'Количество игроков в команде должно быть больше 0.';
-                errorMessage.classList.remove('hidden');
-                return;
-            }
-
-            errorMessage.classList.add('hidden');
-            
-            const normalizedPlayers = normalizeRatings(players);
-            const sortedPlayers = normalizedPlayers.sort((a, b) => b.normalized_rating - a.normalized_rating);
-            
-            const numTeams = Math.ceil(players.length / playersPerTeam);
-            const teams = Array.from({ length: numTeams }, () => []);
-            
-            for (let i = 0; i < sortedPlayers.length; i++) {
-                const teamIndex = i % numTeams;
-                teams[teamIndex].push(sortedPlayers[i]);
-            }
-
-            displayResults(teams, numTeams, playersPerTeam);
-        }
-
-        function displayResults(teams, numTeams, playersPerTeam) {
-            const outputDiv = document.getElementById('results-output');
-            outputDiv.innerHTML = `
-                <p>Всего игроков: ${players.length}</p>
-                <p>Игроков в каждой команде: ${playersPerTeam}</p>
-                <p>Будет сформировано команд: ${numTeams}</p>
-                <br>
-                <h3 class="text-xl font-bold">--- Результаты балансировки ---</h3>
-            `;
-            
-            const allTeamRatings = [];
-            teams.forEach((team, index) => {
-                let totalRating = 0;
-                const teamHtml = team.map(player => {
-                    totalRating += player.rating;
-                    return `<span class="block">${roleEmojis[player.role] || ''} ${player.name} (${player.role}): ${player.rating}</span>`;
-                }).join('');
-                
-                allTeamRatings.push(totalRating);
-                
-                const teamCard = document.createElement('div');
-                teamCard.className = 'team-card';
-                teamCard.innerHTML = `
-                    <h3>Команда ${index + 1}:</h3>
-                    <div class="space-y-2 mt-2">${teamHtml}</div>
-                    <p class="font-bold mt-2">Общий рейтинг: ${totalRating}</p>
-                `;
-                outputDiv.appendChild(teamCard);
-            });
-            
-            if (allTeamRatings.length > 1) {
-                const minRating = Math.min(...allTeamRatings);
-                const maxRating = Math.max(...allTeamRatings);
-                const difference = maxRating - minRating;
-                
-                const differenceP = document.createElement('p');
-                differenceP.className = 'mt-4 text-yellow-400 font-bold';
-                differenceP.innerHTML = `Разница между самым высоким и самым низким рейтингом команды: ${difference}`;
-                outputDiv.appendChild(differenceP);
-            }
-        }
-    </script>
-</body>
-</html>
-        input, select {
-            background-color: #1a1a1a;
-            border: 1px solid #333333;
-            color: #f8fafc;
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333333;
             padding: 0.75rem;
             border-radius: 8px;
-            width: 100%;
-            transition: all 0.2s ease-in-out;
+            margin-bottom: 0.5rem;
         }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #fde047;
-            box-shadow: 0 0 0 2px #fde047;
+
+        .results {
+            margin-top: 1rem;
         }
-        button {
-            background-color: #1a1a1a;
-            color: #f8fafc;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            border: 1px solid #fde047;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #333333;
-        }
-        .results h2 {
-            margin-bottom: 1rem;
-        }
+        
         .team-card {
             background-color: #1a1a1a;
             padding: 1.5rem;
             border-radius: 8px;
             margin-bottom: 1.5rem;
         }
+        
         .team-card h3 {
-            font-size: 1.25rem;
             font-weight: 600;
+            color: #fde047;
             margin-bottom: 0.5rem;
         }
+        
         .error-message {
-            color: #ef4444;
+            color: #f44444;
             margin-top: 1rem;
-        }
-        .delete-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #e2e8f0;
-            font-size: 1.5rem;
-            transition: color 0.2s;
-            line-height: 1;
-        }
-        .delete-btn:hover {
-            color: #fde047;
-        }
-        .login-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             text-align: center;
-            height: 100vh;
         }
-        .login-screen button {
-            padding: 1rem 2rem;
-            font-size: 1.25rem;
-        }
+        
         .admin-panel {
             background-color: #2a2a2a;
-            margin-top: 2rem;
             padding: 1rem;
+            margin-top: 2rem;
             border-radius: 8px;
         }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
     </style>
-</head>
-<body>
-
-    <div id="login-screen" class="login-screen">
-        <h1 class="text-4xl font-bold mb-8">Балансировщик Команд</h1>
-        <p class="text-lg mb-6 text-gray-400">Пожалуйста, войдите, чтобы получить доступ.</p>
-        <button onclick="signInWithGoogle()">Войти через Google</button>
-    </div>
-
-    <div id="access-pending" class="login-screen hidden">
-        <h1 class="text-4xl font-bold mb-8">Запрос на доступ отправлен</h1>
-        <p class="text-lg mb-6 text-gray-400">Подождите, пока администратор одобрит ваш запрос. Спасибо!</p>
-        <button onclick="signOutUser()">Выйти</button>
-    </div>
-
-    <div id="main-content" class="container lg:grid-cols-[1fr_2fr] hidden">
-        <!-- Панель управления -->
-        <div class="card">
-            <h1 class="text-3xl font-bold mb-6 text-center">Балансировщик команд</h1>
-            <p class="text-xs text-gray-400 mb-4 text-center">
-                Ваш ID пользователя: <span id="user-id">...</span>
-                <button onclick="signOutUser()" class="delete-btn float-right">Выйти</button>
-            </p>
-            
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold mb-4">Добавить игрока</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <input type="text" id="player-name" placeholder="Никнейм">
-                    <select id="player-role">
-                        <option value="Guardian">Guardian</option>
-                        <option value="Titan">Titan</option>
-                        <option value="Legend">Legend</option>
-                        <option value="Divine">Divine</option>
-                        <option value="Recruit">Recruit</option>
-                        <option value="Knight">Knight</option>
-                        <option value="Archon">Archon</option>
-                        <option value="Lord">Lord</option>
-                    </select>
-                    <input type="number" id="player-rating" placeholder="Рейтинг">
-                </div>
-                <button onclick="addPlayer()" class="w-full">Добавить игрока</button>
-            </div>
-
-            <!-- Список игроков -->
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold mb-4">Список игроков (<span id="player-count">0</span>)</h2>
-                <div id="player-list" class="space-y-2 max-h-64 overflow-y-auto">
-                    <!-- Players will be added here -->
-                </div>
-            </div>
-            
-            <div class="mb-6">
-                <label for="players-per-team" class="block mb-2 text-lg font-medium">Игроков в команде</label>
-                <input type="number" id="players-per-team" value="5" min="1">
-            </div>
-
-            <button onclick="balanceTeams()" class="w-full">Балансировать</button>
-            <p id="error-message" class="error-message hidden"></p>
-
-            <div id="admin-panel" class="admin-panel hidden">
-                <h2 class="text-xl font-semibold mb-2">Запросы на доступ</h2>
-                <div id="pending-users-list" class="space-y-2">
-                    <!-- Pending users will be listed here -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- Результаты -->
-        <div class="card results">
-            <h2 class="text-3xl font-bold mb-4 text-center">Результаты</h2>
-            <div id="results-output" class="text-lg">
-                <p class="text-center text-gray-200">Добавьте игроков и нажмите "Балансировать", чтобы увидеть результат.</p>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+        // Set log level for detailed debugging
+        setLogLevel('debug');
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDEl5R3o_YOUR_API_KEY",
+            authDomain: "teambalancer-e886f.firebaseapp.com",
+            projectId: "teambalancer-e886f",
+            storageBucket: "teambalancer-e886f.appspot.com",
+            messagingSenderId: "307485737082",
+            appId: "1:307485737082:web:be74917a232f17042851f0"
+        };
         
-        // Firebase configuration and initialization
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
-
-        // **ВАЖНО**: Замените 'nikitalodatok2005@gmail.com' на свои почты.
-        // Чтобы добавить несколько почт, используйте массив.
-        const adminEmails = ['nikitalodatok2005@gmail.com', 'почта2@example.com', 'почта3@example.com'];
         
-        // Global variables for players list and user ID
-        let players = [];
-        let userId = '';
+        const mainContent = document.getElementById('main-content');
+        const loginScreen = document.getElementById('login-screen');
 
-        // Normalization factors for roles
-        const normalizationFactors = {
-            'Titan': 7,
-            'Legend': 3,
-            'Divine': 4,
-            'Recruit': 0.5,
-            'Knight': 1.7,
-            'Archon': 2.7,
-            'Lord': 4,
-            'Guardian': 1,
-        };
+        let userId = null;
+        let username = null;
+        let isAuthReady = false;
 
-        const roleEmojis = {
-            'Titan': '⚔️',
-            'Legend': '⭐',
-            'Divine': '👑',
-            'Recruit': '👶',
-            'Knight': '🛡️',
-            'Archon': '🏹',
-            'Lord': '🧙‍♂️',
-            'Guardian': '💎',
-        };
-
-        // Authenticate user and set up Firestore listener
+        // Listener for authentication state changes
         onAuthStateChanged(auth, async (user) => {
-            const mainContent = document.getElementById('main-content');
-            const loginScreen = document.getElementById('login-screen');
-            const accessPending = document.getElementById('access-pending');
-            const adminPanel = document.getElementById('admin-panel');
-
             if (user) {
+                // User is signed in
                 userId = user.uid;
-                document.getElementById('user-id').textContent = userId;
-
-                // Check if user is an admin or approved
-                const usersRef = collection(db, `artifacts/${appId}/public/data/users`);
-                const userDocRef = doc(usersRef, user.uid);
-                
-                const isAdmin = adminEmails.includes(user.email);
-
-                if (isAdmin) {
-                    // Admin gets full access and can see all users
-                    adminPanel.classList.remove('hidden');
-                    mainContent.classList.remove('hidden');
-                    loginScreen.classList.add('hidden');
-                    accessPending.classList.add('hidden');
-                    setupAdminListener();
-                    setupFirestoreListener();
-                } else {
-                    // Check if user is already approved
-                    onSnapshot(userDocRef, (docSnap) => {
-                        if (docSnap.exists() && docSnap.data().isApproved) {
-                            mainContent.classList.remove('hidden');
-                            loginScreen.classList.add('hidden');
-                            accessPending.classList.add('hidden');
-                            adminPanel.classList.add('hidden');
-                            setupFirestoreListener();
-                        } else {
-                            // User is not approved, show pending screen
-                            mainContent.classList.add('hidden');
-                            loginScreen.classList.add('hidden');
-                            accessPending.classList.remove('hidden');
-                            // Create or update user doc for admin to approve
-                            setDoc(userDocRef, { 
-                                email: user.email, 
-                                isApproved: false, 
-                                requested_at: new Date() 
-                            }, { merge: true });
-                        }
-                    });
-                }
+                username = user.displayName;
+                console.log("User is authenticated:", userId);
+                loginScreen.style.display = 'none';
+                mainContent.style.display = 'block';
+                document.getElementById('welcome-message').textContent = `Добро пожаловать, ${username}!`;
+                await loadPlayers();
             } else {
-                loginScreen.classList.remove('hidden');
-                mainContent.classList.add('hidden');
-                accessPending.classList.add('hidden');
-                adminPanel.classList.add('hidden');
+                // User is signed out
+                userId = null;
+                username = null;
+                console.log("User is not authenticated");
+                loginScreen.style.display = 'flex';
+                mainContent.style.display = 'none';
+                // Sign in anonymously if no initial token is provided
+                try {
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    console.log("Signed in anonymously or with custom token.");
+                } catch (error) {
+                    console.error("Error during authentication:", error);
+                }
+            }
+            isAuthReady = true;
+        });
+
+        // Event listeners for login and logout
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                // User logged in, onAuthStateChanged will handle the rest
+            } catch (error) {
+                console.error("Google login failed:", error);
+            }
+        });
+        
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                console.log("User logged out");
+            } catch (error) {
+                console.error("Logout failed:", error);
             }
         });
 
-        async function signInWithGoogle() {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Firebase auth error:", error);
-            }
-        }
+        // Player management logic
+        const playerForm = document.getElementById('player-form');
+        const playersList = document.getElementById('players-list');
+        const balanceForm = document.getElementById('balance-form');
+        const resultsDiv = document.getElementById('results');
 
-        async function signOutUser() {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Error signing out: ", error);
-            }
-        }
+        const playerRankings = {
+            'Herald': 0, 'Guardian': 1, 'Crusader': 2, 'Archon': 3, 'Legend': 4,
+            'Ancient': 5, 'Divine': 6, 'Immortal': 7, '' : 0 // Add a default empty string rank
+        };
 
-        function setupAdminListener() {
-            const usersRef = collection(db, `artifacts/${appId}/public/data/users`);
-            const pendingUsersList = document.getElementById('pending-users-list');
-
-            onSnapshot(usersRef, (snapshot) => {
-                pendingUsersList.innerHTML = '';
-                snapshot.forEach(docSnap => {
-                    const user = docSnap.data();
-                    if (!user.isApproved) {
-                        const userDiv = document.createElement('div');
-                        userDiv.className = 'flex justify-between items-center p-2 rounded-lg bg-gray-700';
-                        userDiv.innerHTML = `
-                            <span>${user.email}</span>
-                            <button onclick="approveUser('${docSnap.id}')" class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Одобрить</button>
-                        `;
-                        pendingUsersList.appendChild(userDiv);
-                    }
-                });
-            });
-        }
-
-        async function approveUser(userIdToApprove) {
-            const userDocRef = doc(db, `artifacts/${appId}/public/data/users`, userIdToApprove);
-            try {
-                await setDoc(userDocRef, { isApproved: true }, { merge: true });
-            } catch (error) {
-                console.error("Error approving user:", error);
-            }
-        }
-
-        // Set up real-time listener for players from Firestore
-        function setupFirestoreListener() {
-            const playersColRef = collection(db, `artifacts/${appId}/public/data/players`);
-            onSnapshot(playersColRef, (snapshot) => {
-                players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                updatePlayerList();
-            });
-        }
+        const rankingTiers = {
+            'Herald': [0, 600],
+            'Guardian': [600, 1400],
+            'Crusader': [1400, 2400],
+            'Archon': [2400, 3600],
+            'Legend': [3600, 4800],
+            'Ancient': [4800, 6000],
+            'Divine': [6000, 7000],
+            'Immortal': [7000, 10000]
+        };
         
-        function updatePlayerList() {
-            const listContainer = document.getElementById('player-list');
-            listContainer.innerHTML = '';
-            players.forEach((player) => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex justify-between items-center bg-transparent p-2 rounded-lg transition-colors duration-200 hover:bg-gray-800';
-                playerDiv.innerHTML = `
-                    <span>${roleEmojis[player.role] || ''} ${player.name} (${player.role}): ${player.rating}</span>
-                    <button onclick="removePlayer('${player.id}')" class="delete-btn">&times;</button>
-                `;
-                listContainer.appendChild(playerDiv);
-            });
-            document.getElementById('player-count').textContent = players.length;
-        }
-        
-        // Remove player from Firestore
-        async function removePlayer(playerId) {
-            try {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, playerId));
-            } catch (error) {
-                console.error("Error removing player: ", error);
+        function getRankingFromMMR(mmr) {
+            for (const rank in rankingTiers) {
+                const [min, max] = rankingTiers[rank];
+                if (mmr >= min && mmr <= max) {
+                    return rank;
+                }
             }
+            return 'Unknown';
         }
 
-        // Add player to Firestore
-        async function addPlayer() {
-            const name = document.getElementById('player-name').value.trim();
-            const role = document.getElementById('player-role').value;
-            const rating = parseInt(document.getElementById('player-rating').value, 10);
-            const errorMessage = document.getElementById('error-message');
-
-            if (!name || isNaN(rating) || rating <= 0) {
-                errorMessage.textContent = 'Пожалуйста, заполните все поля корректно.';
-                errorMessage.classList.remove('hidden');
+        playerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!userId) {
+                displayMessage("Пожалуйста, войдите, чтобы добавить игрока.", 'error');
                 return;
             }
-
-            errorMessage.classList.add('hidden');
+            const nickname = document.getElementById('nickname').value;
+            const rank = document.getElementById('rank').value;
+            const mmr = parseInt(document.getElementById('mmr').value);
             
+            if (!nickname || isNaN(mmr)) {
+                displayMessage("Пожалуйста, заполните все поля.", 'error');
+                return;
+            }
+            
+            const newPlayer = {
+                nickname,
+                rank,
+                mmr,
+                ownerId: userId,
+                ownerName: username,
+            };
+            
+            await addPlayer(newPlayer);
+            playerForm.reset();
+        });
+
+        balanceForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const numPlayersPerTeam = parseInt(document.getElementById('num-players').value);
+            if (isNaN(numPlayersPerTeam) || numPlayersPerTeam <= 0) {
+                displayMessage("Пожалуйста, введите корректное количество игроков в команде.", 'error');
+                return;
+            }
+            await balanceTeams(numPlayersPerTeam);
+        });
+
+        async function addPlayer(player) {
             try {
-                await addDoc(collection(db, `artifacts/${appId}/public/data/players`), {
-                    name,
-                    role,
-                    rating,
-                    created_at: new Date()
-                });
+                // Use a dedicated collection for players of a specific user
+                const playerDocRef = doc(db, 'artifacts', 'teambalancer-e886f', 'users', userId, 'players', crypto.randomUUID());
+                await setDoc(playerDocRef, player);
+                displayMessage("Игрок добавлен!", 'success');
             } catch (error) {
                 console.error("Error adding player: ", error);
+                displayMessage("Ошибка при добавлении игрока. Попробуйте еще раз.", 'error');
             }
-            
-            // Clear inputs
-            document.getElementById('player-name').value = '';
-            document.getElementById('player-rating').value = '';
+        }
+
+        async function loadPlayers() {
+            if (!isAuthReady || !userId) return;
+            try {
+                playersList.innerHTML = '';
+                // Get a reference to the collection
+                const playersCollection = collection(db, 'artifacts', 'teambalancer-e886f', 'users', userId, 'players');
+                
+                // Set up a real-time listener
+                onSnapshot(playersCollection, (snapshot) => {
+                    const players = [];
+                    snapshot.forEach(doc => {
+                        const player = doc.data();
+                        players.push({ id: doc.id, ...player });
+                    });
+                    
+                    playersList.innerHTML = '';
+                    if (players.length > 0) {
+                        players.forEach(player => {
+                            const playerItem = document.createElement('div');
+                            playerItem.className = 'player-item';
+                            playerItem.innerHTML = `
+                                <span>${player.nickname} (${player.rank}): ${player.mmr}</span>
+                                <button class="delete-btn" data-id="${player.id}">&times;</button>
+                            `;
+                            playersList.appendChild(playerItem);
+                        });
+                        addDeleteListeners();
+                    } else {
+                        playersList.innerHTML = '<p>Список игроков пуст. Добавьте игроков, чтобы сбалансировать команды.</p>';
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error loading players: ", error);
+                displayMessage("Ошибка при загрузке игроков. Пожалуйста, обновите страницу.", 'error');
+            }
         }
         
-        function normalizeRatings(players) {
-            return players.map(player => {
-                const normalizedPlayer = { ...player };
-                const factor = normalizationFactors[player.role] || 1;
-                normalizedPlayer.normalized_rating = player.rating / factor;
-                return normalizedPlayer;
+        function addDeleteListeners() {
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const playerId = e.target.dataset.id;
+                    await deletePlayer(playerId);
+                });
             });
         }
-
-        function balanceTeams() {
-            const playersPerTeam = parseInt(document.getElementById('players-per-team').value, 10);
-            const errorMessage = document.getElementById('error-message');
-
-            if (players.length === 0) {
-                errorMessage.textContent = 'Добавьте хотя бы одного игрока.';
-                errorMessage.classList.remove('hidden');
+        
+        async function deletePlayer(playerId) {
+            try {
+                const docRef = doc(db, 'artifacts', 'teambalancer-e886f', 'users', userId, 'players', playerId);
+                await deleteDoc(docRef);
+                displayMessage("Игрок удален!", 'success');
+            } catch (error) {
+                console.error("Error deleting player: ", error);
+                displayMessage("Ошибка при удалении игрока.", 'error');
+            }
+        }
+        
+        async function balanceTeams(numPlayersPerTeam) {
+            if (!userId) {
+                displayMessage("Пожалуйста, войдите, чтобы сбалансировать команды.", 'error');
                 return;
             }
+            try {
+                const players = await getPlayersFromDB();
+                if (players.length < 2) {
+                    displayMessage("Недостаточно игроков для балансировки. Добавьте как минимум двух игроков.", 'error');
+                    return;
+                }
+                const numTeams = Math.floor(players.length / numPlayersPerTeam);
+                if (numTeams === 0) {
+                    displayMessage(`Слишком мало игроков. Необходимо хотя бы ${numPlayersPerTeam} для одной команды.`, 'error');
+                    return;
+                }
+                
+                // Sort players by MMR to balance teams
+                players.sort((a, b) => b.mmr - a.mmr);
+                
+                let teams = Array.from({ length: numTeams }, () => ({ players: [], totalMMR: 0 }));
+                
+                let playersInTeams = 0;
+                let playerIndex = 0;
+                while (playersInTeams < numTeams * numPlayersPerTeam) {
+                    for (let i = 0; i < teams.length && playerIndex < players.length; i++) {
+                        if (teams[i].players.length < numPlayersPerTeam) {
+                            teams[i].players.push(players[playerIndex]);
+                            teams[i].totalMMR += players[playerIndex].mmr;
+                            playerIndex++;
+                            playersInTeams++;
+                        }
+                    }
+                }
+                
+                displayResults(teams, players.length, numTeams, players.length - playersInTeams);
 
-            if (playersPerTeam <= 0) {
-                errorMessage.textContent = 'Количество игроков в команде должно быть больше 0.';
-                errorMessage.classList.remove('hidden');
-                return;
+            } catch (error) {
+                console.error("Error balancing teams: ", error);
+                displayMessage("Ошибка при балансировке команд. Пожалуйста, попробуйте еще раз.", 'error');
             }
-
-            errorMessage.classList.add('hidden');
-            
-            const normalizedPlayers = normalizeRatings(players);
-            const sortedPlayers = normalizedPlayers.sort((a, b) => b.normalized_rating - a.normalized_rating);
-            
-            const numTeams = Math.ceil(players.length / playersPerTeam);
-            const teams = Array.from({ length: numTeams }, () => []);
-            
-            for (let i = 0; i < sortedPlayers.length; i++) {
-                const teamIndex = i % numTeams;
-                teams[teamIndex].push(sortedPlayers[i]);
-            }
-
-            displayResults(teams, numTeams, playersPerTeam);
         }
 
-        function displayResults(teams, numTeams, playersPerTeam) {
-            const outputDiv = document.getElementById('results-output');
-            outputDiv.innerHTML = `
-                <p>Всего игроков: ${players.length}</p>
-                <p>Игроков в каждой команде: ${playersPerTeam}</p>
+        async function getPlayersFromDB() {
+            const players = [];
+            if (!userId) return players;
+            try {
+                const playersRef = collection(db, 'artifacts', 'teambalancer-e886f', 'users', userId, 'players');
+                const q = query(playersRef);
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach((doc) => {
+                    players.push(doc.data());
+                });
+                return players;
+            } catch (error) {
+                console.error("Error fetching players for balancing: ", error);
+                return players;
+            }
+        }
+        
+        function displayResults(teams, totalPlayers, numTeams, remainingPlayers) {
+            resultsDiv.innerHTML = `
+                <h2>Результаты</h2>
+                <p>Всего игроков: ${totalPlayers}</p>
+                <p>Игроков в каждой команде: ${teams[0].players.length}</p>
                 <p>Будет сформировано команд: ${numTeams}</p>
-                <br>
-                <h3 class="text-xl font-bold">--- Результаты балансировки ---</h3>
+                ${remainingPlayers > 0 ? `<p>Оставшиеся игроки: ${remainingPlayers}</p>` : ''}
+                <div class="results">
+                    ${teams.map((team, index) => `
+                        <div class="team-card">
+                            <h3>Команда ${index + 1}</h3>
+                            <ul>
+                                ${team.players.map(player => `
+                                    <li>${player.nickname} (${player.rank}): ${player.mmr}</li>
+                                `).join('')}
+                            </ul>
+                            <p><strong>Общий рейтинг:</strong> ${team.totalMMR}</p>
+                        </div>
+                    `).join('')}
+                </div>
             `;
             
-            const allTeamRatings = [];
-            teams.forEach((team, index) => {
-                let totalRating = 0;
-                const teamHtml = team.map(player => {
-                    totalRating += player.rating;
-                    return `<span class="block">${roleEmojis[player.role] || ''} ${player.name} (${player.role}): ${player.rating}</span>`;
-                }).join('');
-                
-                allTeamRatings.push(totalRating);
-                
-                const teamCard = document.createElement('div');
-                teamCard.className = 'team-card';
-                teamCard.innerHTML = `
-                    <h3>Команда ${index + 1}:</h3>
-                    <div class="space-y-2 mt-2">${teamHtml}</div>
-                    <p class="font-bold mt-2">Общий рейтинг: ${totalRating}</p>
+            // Calculate and display the difference between the highest and lowest ranked teams
+            if (teams.length > 1) {
+                const mmrList = teams.map(team => team.totalMMR).sort((a, b) => a - b);
+                const minMMR = mmrList[0];
+                const maxMMR = mmrList[mmrList.length - 1];
+                const diff = maxMMR - minMMR;
+                resultsDiv.innerHTML += `
+                    <p>Разница между самым высоким и самым низким рейтингом команды: <strong>${diff}</strong></p>
                 `;
-                outputDiv.appendChild(teamCard);
-            });
-            
-            if (allTeamRatings.length > 1) {
-                const minRating = Math.min(...allTeamRatings);
-                const maxRating = Math.max(...allTeamRatings);
-                const difference = maxRating - minRating;
-                
-                const differenceP = document.createElement('p');
-                differenceP.className = 'mt-4 text-yellow-400 font-bold';
-                differenceP.innerHTML = `Разница между самым высоким и самым низким рейтингом команды: ${difference}`;
-                outputDiv.appendChild(differenceP);
             }
         }
+        
+        // Helper function for displaying messages
+        function displayMessage(message, type) {
+            const messageBox = document.createElement('div');
+            messageBox.className = `message-box ${type}`;
+            messageBox.textContent = message;
+            document.body.appendChild(messageBox);
+            setTimeout(() => {
+                messageBox.remove();
+            }, 3000);
+        }
+        
     </script>
+</head>
+<body>
+
+    <div id="login-screen" class="login-screen">
+        <div class="panel login-panel">
+            <h2>Балансировщик Команд</h2>
+            <p>Пожалуйста, войдите, чтобы получить доступ.</p>
+            <button id="login-btn" class="login-btn">Войти через Google</button>
+        </div>
+    </div>
+
+    <div id="main-content" class="container" style="display: none;">
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1>Балансировщик Команд</h1>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <p id="welcome-message" style="margin: 0;"></p>
+                    <button id="logout-btn">Выйти</button>
+                </div>
+            </div>
+            
+            <div class="admin-panel">
+                <h2>Добавить игрока</h2>
+                <form id="player-form" class="form-group">
+                    <div class="player-input-group">
+                        <input type="text" id="nickname" placeholder="Никнейм" required>
+                        <select id="rank" required>
+                            <option value="Guardian">Guardian</option>
+                            <option value="Crusader">Crusader</option>
+                            <option value="Archon">Archon</option>
+                            <option value="Legend">Legend</option>
+                            <option value="Ancient">Ancient</option>
+                            <option value="Divine">Divine</option>
+                            <option value="Immortal">Immortal</option>
+                        </select>
+                        <input type="number" id="mmr" placeholder="Рейтинг" required>
+                    </div>
+                    <button type="submit" style="width: 100%; margin-top: 1rem;">Добавить игрока</button>
+                </form>
+
+                <h2>Список игроков (<span id="player-count">0</span>)</h2>
+                <div id="players-list" class="list-container">
+                    <p>Список игроков пуст. Добавьте игроков, чтобы сбалансировать команды.</p>
+                </div>
+
+                <h2 style="margin-top: 2rem;">Балансировка</h2>
+                <form id="balance-form">
+                    <div class="form-group">
+                        <label for="num-players">Игроков в команде</label>
+                        <input type="number" id="num-players" value="5" min="1" required>
+                    </div>
+                    <button type="submit" style="width: 100%;">Балансировать</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div id="results">
+                <h2>Результаты</h2>
+                <p>Добавьте игроков и нажмите "Балансировать", чтобы увидеть результат.</p>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
-

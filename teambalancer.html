@@ -593,6 +593,535 @@
 
 </body>
 </html>
+            color: #111827;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-btn:hover {
+            background-color: #facc15;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 400;
+            color: #d1d5db;
+        }
+
+        input, select {
+            background-color: #1f2937;
+            border: 1px solid #333333;
+            color: #f9fafb;
+            padding: 0.75rem;
+            border-radius: 8px;
+            width: 100%;
+            transition: all 0.2s ease-in-out;
+            box-sizing: border-box;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #fde047;
+            box-shadow: 0 0 0 2px #fde047;
+        }
+
+        button {
+            background-color: #1a1a1a;
+            color: #f9fafb;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            border: 1px solid #fde047;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #333333;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #e2e8f0;
+            font-size: 1.5rem;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+
+        .delete-btn:hover {
+            color: #fde047;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .player-input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .player-input-group input,
+        .player-input-group select {
+            flex-grow: 1;
+        }
+        
+        .list-container {
+            margin-top: 1.5rem;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333333;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .results {
+            margin-top: 1rem;
+        }
+        
+        .team-card {
+            background-color: #1a1a1a;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .team-card h3 {
+            font-weight: 600;
+            color: #fde047;
+            margin-bottom: 0.5rem;
+        }
+        
+        .error-message {
+            color: #f44444;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        .admin-panel {
+            background-color: #2a2a2a;
+            padding: 1rem;
+            margin-top: 2rem;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged, getRedirectResult, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+        setLogLevel('debug');
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        
+        const mainContent = document.getElementById('main-content');
+        const loginScreen = document.getElementById('login-screen');
+
+        let userId = null;
+        let username = null;
+        let isAuthReady = false;
+
+        async function handleRedirectResult() {
+            try {
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    console.log("Вход через Google успешен:", result.user.displayName);
+                }
+            } catch (error) {
+                console.error("Ошибка при получении результата перенаправления:", error.code, error.message);
+                displayMessage(`Ошибка: ${error.message}. Пожалуйста, попробуйте еще раз.`, 'error');
+            }
+        }
+        handleRedirectResult();
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                username = user.displayName;
+                console.log("Пользователь аутентифицирован:", userId);
+                loginScreen.style.display = 'none';
+                mainContent.style.display = 'flex';
+                document.getElementById('welcome-message').textContent = `Добро пожаловать, ${username}!`;
+                await loadPlayers();
+            } else {
+                userId = null;
+                username = null;
+                console.log("Пользователь не аутентифицирован");
+                loginScreen.style.display = 'flex';
+                mainContent.style.display = 'none';
+                try {
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    console.log("Вход выполнен анонимно или с помощью пользовательского токена.");
+                } catch (error) {
+                    console.error("Ошибка при аутентификации:", error);
+                }
+            }
+            isAuthReady = true;
+        });
+
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            try {
+                await signInWithRedirect(auth, provider);
+            } catch (error) {
+                console.error("Ошибка входа через Google:", error.code, error.message);
+                let errorMessage = `Ошибка при входе. Попробуйте еще раз. Код ошибки: ${error.code}.`;
+                if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                    errorMessage = "Окно входа было закрыто или заблокировано. Попробуйте еще раз и не закрывайте его.";
+                } else if (error.code === 'auth/auth-domain-not-configured') {
+                     errorMessage = "Домен не авторизован. Пожалуйста, добавьте его в настройки Firebase.";
+                }
+                displayMessage(errorMessage, 'error');
+            }
+        });
+        
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                console.log("Пользователь вышел");
+            } catch (error) {
+                console.error("Ошибка выхода:", error);
+            }
+        });
+
+        const playerForm = document.getElementById('player-form');
+        const playersList = document.getElementById('players-list');
+        const balanceForm = document.getElementById('balance-form');
+        const resultsDiv = document.getElementById('results');
+
+        const playerRankings = {
+            'Herald': 0, 'Guardian': 1, 'Crusader': 2, 'Archon': 3, 'Legend': 4,
+            'Ancient': 5, 'Divine': 6, 'Immortal': 7, '' : 0
+        };
+
+        const rankingTiers = {
+            'Herald': [0, 600],
+            'Guardian': [600, 1400],
+            'Crusader': [1400, 2400],
+            'Archon': [2400, 3600],
+            'Legend': [3600, 4800],
+            'Ancient': [4800, 6000],
+            'Divine': [6000, 7000],
+            'Immortal': [7000, 10000]
+        };
+        
+        function getRankingFromMMR(mmr) {
+            for (const rank in rankingTiers) {
+                const [min, max] = rankingTiers[rank];
+                if (mmr >= min && mmr <= max) {
+                    return rank;
+                }
+            }
+            return 'Unknown';
+        }
+
+        playerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!userId) {
+                displayMessage("Пожалуйста, войдите, чтобы добавить игрока.", 'error');
+                return;
+            }
+            const nickname = document.getElementById('nickname').value;
+            const rank = document.getElementById('rank').value;
+            const mmr = parseInt(document.getElementById('mmr').value);
+            
+            if (!nickname || isNaN(mmr)) {
+                displayMessage("Пожалуйста, заполните все поля.", 'error');
+                return;
+            }
+            
+            const newPlayer = {
+                nickname,
+                rank,
+                mmr,
+                ownerId: userId,
+                ownerName: username,
+            };
+            
+            await addPlayer(newPlayer);
+            playerForm.reset();
+        });
+
+        balanceForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const numPlayersPerTeam = parseInt(document.getElementById('num-players').value);
+            if (isNaN(numPlayersPerTeam) || numPlayersPerTeam <= 0) {
+                displayMessage("Пожалуйста, введите корректное количество игроков в команде.", 'error');
+                return;
+            }
+            await balanceTeams(numPlayersPerTeam);
+        });
+
+        async function addPlayer(player) {
+            try {
+                const playerDocRef = doc(db, 'artifacts', appId, 'users', userId, 'players', crypto.randomUUID());
+                await setDoc(playerDocRef, player);
+                displayMessage("Игрок добавлен!", 'success');
+            } catch (error) {
+                console.error("Ошибка при добавлении игрока: ", error);
+                displayMessage("Ошибка при добавлении игрока. Попробуйте еще раз.", 'error');
+            }
+        }
+
+        async function loadPlayers() {
+            if (!isAuthReady || !userId) return;
+            try {
+                playersList.innerHTML = '';
+                const playersCollection = collection(db, 'artifacts', appId, 'users', userId, 'players');
+                
+                onSnapshot(playersCollection, (snapshot) => {
+                    const players = [];
+                    snapshot.forEach(doc => {
+                        const player = doc.data();
+                        players.push({ id: doc.id, ...player });
+                    });
+                    
+                    playersList.innerHTML = '';
+                    if (players.length > 0) {
+                        players.forEach(player => {
+                            const playerItem = document.createElement('div');
+                            playerItem.className = 'player-item';
+                            playerItem.innerHTML = `
+                                <span>${player.nickname} (${player.rank}): ${player.mmr}</span>
+                                <button class="delete-btn" data-id="${player.id}">&times;</button>
+                            `;
+                            playersList.appendChild(playerItem);
+                        });
+                        addDeleteListeners();
+                        document.getElementById('player-count').textContent = players.length;
+                    } else {
+                        playersList.innerHTML = '<p>Список игроков пуст. Добавьте игроков, чтобы сбалансировать команды.</p>';
+                        document.getElementById('player-count').textContent = 0;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Ошибка при загрузке игроков: ", error);
+                displayMessage("Ошибка при загрузке игроков. Пожалуйста, обновите страницу.", 'error');
+            }
+        }
+        
+        function addDeleteListeners() {
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const playerId = e.target.dataset.id;
+                    await deletePlayer(playerId);
+                });
+            });
+        }
+        
+        async function deletePlayer(playerId) {
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'players', playerId);
+                await deleteDoc(docRef);
+                displayMessage("Игрок удален!", 'success');
+            } catch (error) {
+                console.error("Ошибка при удалении игрока: ", error);
+                displayMessage("Ошибка при удалении игрока.", 'error');
+            }
+        }
+        
+        async function balanceTeams(numPlayersPerTeam) {
+            if (!userId) {
+                displayMessage("Пожалуйста, войдите, чтобы сбалансировать команды.", 'error');
+                return;
+            }
+            try {
+                const players = await getPlayersFromDB();
+                if (players.length < 2) {
+                    displayMessage("Недостаточно игроков для балансировки. Добавьте как минимум двух игроков.", 'error');
+                    return;
+                }
+                const numTeams = Math.floor(players.length / numPlayersPerTeam);
+                if (numTeams === 0) {
+                    displayMessage(`Слишком мало игроков. Необходимо хотя бы ${numPlayersPerTeam} для одной команды.`, 'error');
+                    return;
+                }
+                
+                players.sort((a, b) => b.mmr - a.mmr);
+                
+                let teams = Array.from({ length: numTeams }, () => ({ players: [], totalMMR: 0 }));
+                
+                let playersInTeams = 0;
+                let playerIndex = 0;
+                while (playersInTeams < numTeams * numPlayersPerTeam) {
+                    for (let i = 0; i < teams.length && playerIndex < players.length; i++) {
+                        if (teams[i].players.length < numPlayersPerTeam) {
+                            teams[i].players.push(players[playerIndex]);
+                            teams[i].totalMMR += players[playerIndex].mmr;
+                            playerIndex++;
+                            playersInTeams++;
+                        }
+                    }
+                }
+                
+                displayResults(teams, players.length, numTeams, players.length - playersInTeams);
+
+            } catch (error) {
+                console.error("Ошибка при балансировке команд: ", error);
+                displayMessage("Ошибка при балансировке команд. Попробуйте еще раз.", 'error');
+            }
+        }
+
+        async function getPlayersFromDB() {
+            const players = [];
+            if (!userId) return players;
+            try {
+                const playersRef = collection(db, 'artifacts', appId, 'users', userId, 'players');
+                const q = query(playersRef);
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach((doc) => {
+                    players.push(doc.data());
+                });
+                return players;
+            } catch (error) {
+                console.error("Ошибка при получении игроков для балансировки: ", error);
+                return players;
+            }
+        }
+        
+        function displayResults(teams, totalPlayers, numTeams, remainingPlayers) {
+            resultsDiv.innerHTML = `
+                <h2>Результаты</h2>
+                <p>Всего игроков: ${totalPlayers}</p>
+                <p>Игроков в каждой команде: ${teams[0].players.length}</p>
+                <p>Будет сформировано команд: ${numTeams}</p>
+                ${remainingPlayers > 0 ? `<p>Оставшиеся игроки: ${remainingPlayers}</p>` : ''}
+                <div class="results">
+                    ${teams.map((team, index) => `
+                        <div class="team-card">
+                            <h3>Команда ${index + 1}</h3>
+                            <ul>
+                                ${team.players.map(player => `
+                                    <li>${player.nickname} (${player.rank}): ${player.mmr}</li>
+                                `).join('')}
+                            </ul>
+                            <p><strong>Общий рейтинг:</strong> ${team.totalMMR}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            if (teams.length > 1) {
+                const mmrList = teams.map(team => team.totalMMR).sort((a, b) => a - b);
+                const minMMR = mmrList[0];
+                const maxMMR = mmrList[mmrList.length - 1];
+                const diff = maxMMR - minMMR;
+                resultsDiv.innerHTML += `
+                    <p>Разница между самым высоким и самым низким рейтингом команды: <strong>${diff}</strong></p>
+                `;
+            }
+        }
+        
+        function displayMessage(message, type) {
+            const messageBox = document.createElement('div');
+            messageBox.className = `message-box ${type}`;
+            messageBox.textContent = message;
+            document.body.appendChild(messageBox);
+            setTimeout(() => {
+                messageBox.remove();
+            }, 3000);
+        }
+        
+    </script>
+</head>
+<body>
+
+    <div id="login-screen" class="login-screen">
+        <div class="panel login-panel">
+            <h2>Балансировщик Команд</h2>
+            <p>Пожалуйста, войдите, чтобы получить доступ.</p>
+            <button id="login-btn" class="login-btn">Войти через Google</button>
+        </div>
+    </div>
+
+    <div id="main-content" class="container">
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1>Балансировщик Команд</h1>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <p id="welcome-message" style="margin: 0;"></p>
+                    <button id="logout-btn">Выйти</button>
+                </div>
+            </div>
+            
+            <div class="admin-panel">
+                <h2>Добавить игрока</h2>
+                <form id="player-form" class="form-group">
+                    <div class="player-input-group">
+                        <input type="text" id="nickname" placeholder="Никнейм" required>
+                        <select id="rank" required>
+                            <option value="Guardian">Guardian</option>
+                            <option value="Crusader">Crusader</option>
+                            <option value="Archon">Archon</option>
+                            <option value="Legend">Legend</option>
+                            <option value="Ancient">Ancient</option>
+                            <option value="Divine">Divine</option>
+                            <option value="Immortal">Immortal</option>
+                        </select>
+                        <input type="number" id="mmr" placeholder="Рейтинг" required>
+                    </div>
+                    <button type="submit" style="width: 100%; margin-top: 1rem;">Добавить игрока</button>
+                </form>
+
+                <h2>Список игроков (<span id="player-count">0</span>)</h2>
+                <div id="players-list" class="list-container">
+                    <p>Список игроков пуст. Добавьте игроков, чтобы сбалансировать команды.</p>
+                </div>
+
+                <h2 style="margin-top: 2rem;">Балансировка</h2>
+                <form id="balance-form">
+                    <div class="form-group">
+                        <label for="num-players">Игроков в команде</label>
+                        <input type="number" id="num-players" value="5" min="1" required>
+                    </div>
+                    <button type="submit" style="width: 100%;">Балансировать</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div id="results">
+                <h2>Результаты</h2>
+                <p>Добавьте игроков и нажмите "Балансировать", чтобы увидеть результат.</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
             max-width: 500px;
         }
 
@@ -2276,6 +2805,7 @@
 
 </body>
 </html>
+
 
 
 

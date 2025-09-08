@@ -200,14 +200,17 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged, getRedirectResult, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-
-        setLogLevel('debug');
         
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Use global variables for Firebase init
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        // Check if config is available before proceeding
+        if (Object.keys(firebaseConfig).length === 0) {
+            console.error("Firebase config is not available. Please ensure the app is running in a valid environment.");
+        }
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -219,7 +222,6 @@
 
         let userId = null;
         let username = null;
-        let isAuthReady = false;
 
         async function handleRedirectResult() {
             try {
@@ -249,23 +251,17 @@
                 console.log("Пользователь не аутентифицирован");
                 loginScreen.style.display = 'flex';
                 mainContent.style.display = 'none';
-                try {
-                    if (typeof __initial_auth_token !== 'undefined') {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                    console.log("Вход выполнен анонимно или с помощью пользовательского токена.");
-                } catch (error) {
-                    console.error("Ошибка при аутентификации:", error);
-                }
             }
-            isAuthReady = true;
         });
 
         document.getElementById('login-btn').addEventListener('click', async () => {
             try {
-                await signInWithRedirect(auth, provider);
+                // Check if custom auth token is available, otherwise use redirect
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInWithRedirect(auth, provider);
+                }
             } catch (error) {
                 console.error("Ошибка входа через Google:", error.code, error.message);
                 let errorMessage = `Ошибка при входе. Попробуйте еще раз. Код ошибки: ${error.code}.`;
@@ -291,33 +287,7 @@
         const playersList = document.getElementById('players-list');
         const balanceForm = document.getElementById('balance-form');
         const resultsDiv = document.getElementById('results');
-
-        const playerRankings = {
-            'Herald': 0, 'Guardian': 1, 'Crusader': 2, 'Archon': 3, 'Legend': 4,
-            'Ancient': 5, 'Divine': 6, 'Immortal': 7, '' : 0
-        };
-
-        const rankingTiers = {
-            'Herald': [0, 600],
-            'Guardian': [600, 1400],
-            'Crusader': [1400, 2400],
-            'Archon': [2400, 3600],
-            'Legend': [3600, 4800],
-            'Ancient': [4800, 6000],
-            'Divine': [6000, 7000],
-            'Immortal': [7000, 10000]
-        };
         
-        function getRankingFromMMR(mmr) {
-            for (const rank in rankingTiers) {
-                const [min, max] = rankingTiers[rank];
-                if (mmr >= min && mmr <= max) {
-                    return rank;
-                }
-            }
-            return 'Unknown';
-        }
-
         playerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!userId) {
@@ -367,7 +337,7 @@
         }
 
         async function loadPlayers() {
-            if (!isAuthReady || !userId) return;
+            if (!userId) return;
             try {
                 playersList.innerHTML = '';
                 const playersCollection = collection(db, 'artifacts', appId, 'users', userId, 'players');

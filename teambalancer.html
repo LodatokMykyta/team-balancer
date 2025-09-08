@@ -20,7 +20,7 @@
         }
 
         .container {
-            display: flex;
+            display: none; /* Initial state is hidden */
             flex-wrap: wrap;
             gap: 2rem;
             justify-content: center;
@@ -201,7 +201,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
         // Set log level for detailed debugging
@@ -236,7 +236,7 @@
                 username = user.displayName;
                 console.log("User is authenticated:", userId);
                 loginScreen.style.display = 'none';
-                mainContent.style.display = 'block';
+                mainContent.style.display = 'flex';
                 document.getElementById('welcome-message').textContent = `Добро пожаловать, ${username}!`;
                 await loadPlayers();
             } else {
@@ -268,6 +268,7 @@
                 // User logged in, onAuthStateChanged will handle the rest
             } catch (error) {
                 console.error("Google login failed:", error);
+                displayMessage("Ошибка при входе. Попробуйте еще раз.", 'error');
             }
         });
         
@@ -288,7 +289,7 @@
 
         const playerRankings = {
             'Herald': 0, 'Guardian': 1, 'Crusader': 2, 'Archon': 3, 'Legend': 4,
-            'Ancient': 5, 'Divine': 6, 'Immortal': 7, '' : 0 // Add a default empty string rank
+            'Ancient': 5, 'Divine': 6, 'Immortal': 7, '' : 0
         };
 
         const rankingTiers = {
@@ -351,8 +352,8 @@
 
         async function addPlayer(player) {
             try {
-                // Use a dedicated collection for players of a specific user
-                const playerDocRef = doc(db, 'artifacts', 'teambalancer-e886f', 'users', userId, 'players', crypto.randomUUID());
+                const appId = "teambalancer-e886f";
+                const playerDocRef = doc(db, 'artifacts', appId, 'users', userId, 'players', crypto.randomUUID());
                 await setDoc(playerDocRef, player);
                 displayMessage("Игрок добавлен!", 'success');
             } catch (error) {
@@ -365,10 +366,9 @@
             if (!isAuthReady || !userId) return;
             try {
                 playersList.innerHTML = '';
-                // Get a reference to the collection
-                const playersCollection = collection(db, 'artifacts', 'teambalancer-e886f', 'users', userId, 'players');
+                const appId = "teambalancer-e886f";
+                const playersCollection = collection(db, 'artifacts', appId, 'users', userId, 'players');
                 
-                // Set up a real-time listener
                 onSnapshot(playersCollection, (snapshot) => {
                     const players = [];
                     snapshot.forEach(doc => {
@@ -388,8 +388,10 @@
                             playersList.appendChild(playerItem);
                         });
                         addDeleteListeners();
+                        document.getElementById('player-count').textContent = players.length;
                     } else {
                         playersList.innerHTML = '<p>Список игроков пуст. Добавьте игроков, чтобы сбалансировать команды.</p>';
+                        document.getElementById('player-count').textContent = 0;
                     }
                 });
 
@@ -410,7 +412,8 @@
         
         async function deletePlayer(playerId) {
             try {
-                const docRef = doc(db, 'artifacts', 'teambalancer-e886f', 'users', userId, 'players', playerId);
+                const appId = "teambalancer-e886f";
+                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'players', playerId);
                 await deleteDoc(docRef);
                 displayMessage("Игрок удален!", 'success');
             } catch (error) {
@@ -436,7 +439,6 @@
                     return;
                 }
                 
-                // Sort players by MMR to balance teams
                 players.sort((a, b) => b.mmr - a.mmr);
                 
                 let teams = Array.from({ length: numTeams }, () => ({ players: [], totalMMR: 0 }));
@@ -458,7 +460,7 @@
 
             } catch (error) {
                 console.error("Error balancing teams: ", error);
-                displayMessage("Ошибка при балансировке команд. Пожалуйста, попробуйте еще раз.", 'error');
+                displayMessage("Ошибка при балансировке команд. Попробуйте еще раз.", 'error');
             }
         }
 
@@ -466,7 +468,8 @@
             const players = [];
             if (!userId) return players;
             try {
-                const playersRef = collection(db, 'artifacts', 'teambalancer-e886f', 'users', userId, 'players');
+                const appId = "teambalancer-e886f";
+                const playersRef = collection(db, 'artifacts', appId, 'users', userId, 'players');
                 const q = query(playersRef);
                 const querySnapshot = await getDocs(q);
                 querySnapshot.forEach((doc) => {
@@ -501,7 +504,6 @@
                 </div>
             `;
             
-            // Calculate and display the difference between the highest and lowest ranked teams
             if (teams.length > 1) {
                 const mmrList = teams.map(team => team.totalMMR).sort((a, b) => a - b);
                 const minMMR = mmrList[0];
@@ -513,7 +515,6 @@
             }
         }
         
-        // Helper function for displaying messages
         function displayMessage(message, type) {
             const messageBox = document.createElement('div');
             messageBox.className = `message-box ${type}`;
@@ -536,7 +537,7 @@
         </div>
     </div>
 
-    <div id="main-content" class="container" style="display: none;">
+    <div id="main-content" class="container">
         <div class="panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h1>Балансировщик Команд</h1>

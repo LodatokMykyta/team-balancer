@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Балансировщик Команд</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000; /* Чёрный фон */
+            color: #f8fafc; /* Белый/светло-серый текст */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr 2fr;
+            }
+        }
+        .card {
+            background-color: #1a1a1a;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        input, select {
+            background-color: #1a1a1a; /* Темный фон для полей ввода */
+            border: 1px solid #333333;
+            color: #f8fafc; /* Белый/светло-серый текст */
+            padding: 0.75rem;
+            border-radius: 8px;
+            width: 100%;
+            transition: all 0.2s ease-in-out;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #fde047; /* Жёлтая рамка при фокусе */
+            box-shadow: 0 0 0 2px #fde047;
+        }
+        button {
+            background-color: #1a1a1a; /* Тёмный фон для кнопки */
+            color: #f8fafc; /* Белый/светло-серый текст на кнопке */
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            border: 1px solid #fde047; /* Жёлтая рамка для кнопки */
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #333333; /* Чуть светлее фон при наведении */
+        }
+        .results h2 {
+            margin-bottom: 1rem;
+        }
+        .team-card {
+            background-color: #1a1a1a; /* Темный фон для карточек команд */
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        .team-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .error-message {
+            color: #ef4444;
+            margin-top: 1rem;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #e2e8f0;
+            font-size: 1.5rem;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+        .delete-btn:hover {
+            color: #fde047;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container lg:grid-cols-[1fr_2fr]">
+
+        <!-- Панель управления -->
+        <div class="card">
+            <h1 class="text-3xl font-bold mb-6 text-center">Балансировщик команд</h1>
+            <p class="text-xs text-gray-400 mb-4 text-center">
+                Ваш ID пользователя: <span id="user-id">...</span>
+            </p>
+            
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4">Добавить игрока</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input type="text" id="player-name" placeholder="Никнейм">
+                    <select id="player-role">
+                        <option value="Guardian">Guardian</option>
+                        <option value="Titan">Titan</option>
+                        <option value="Legend">Legend</option>
+                        <option value="Divine">Divine</option>
+                        <option value="Recruit">Recruit</option>
+                        <option value="Knight">Knight</option>
+                        <option value="Archon">Archon</option>
+                        <option value="Lord">Lord</option>
+                    </select>
+                    <input type="number" id="player-rating" placeholder="Рейтинг">
+                </div>
+                <button onclick="addPlayer()" class="w-full">Добавить игрока</button>
+            </div>
+
+            <!-- Список игроков -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4">Список игроков (<span id="player-count">0</span>)</h2>
+                <div id="player-list" class="space-y-2 max-h-64 overflow-y-auto">
+                    <!-- Players will be added here -->
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <label for="players-per-team" class="block mb-2 text-lg font-medium">Игроков в команде</label>
+                <input type="number" id="players-per-team" value="5" min="1">
+            </div>
+
+            <button onclick="balanceTeams()" class="w-full">Балансировать</button>
+            <p id="error-message" class="error-message hidden"></p>
+        </div>
+        
+        <!-- Результаты -->
+        <div class="card results">
+            <h2 class="text-3xl font-bold mb-4 text-center">Результаты</h2>
+            <div id="results-output" class="text-lg">
+                <p class="text-center text-gray-200">Добавьте игроков и нажмите "Балансировать", чтобы увидеть результат.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Firebase configuration and initialization
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Global variables for players list and user ID
+        let players = [];
+        let userId = '';
+
+        // Normalization factors for roles
+        const normalizationFactors = {
+            'Titan': 7,
+            'Legend': 3,
+            'Divine': 4,
+            'Recruit': 0.5,
+            'Knight': 1.7,
+            'Archon': 2.7,
+            'Lord': 4,
+            'Guardian': 1,
+        };
+
+        const roleEmojis = {
+            'Titan': '⚔️',
+            'Legend': '⭐',
+            'Divine': '👑',
+            'Recruit': '👶',
+            'Knight': '🛡️',
+            'Archon': '🏹',
+            'Lord': '🧙‍♂️',
+            'Guardian': '💎',
+        };
+
+        // Authenticate user and set up Firestore listener
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                document.getElementById('user-id').textContent = userId;
+                setupFirestoreListener();
+            } else {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Firebase auth error:", error);
+                }
+            }
+        });
+
+        // Set up real-time listener for players from Firestore
+        function setupFirestoreListener() {
+            const playersColRef = collection(db, `artifacts/${appId}/public/data/players`);
+            onSnapshot(playersColRef, (snapshot) => {
+                players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updatePlayerList();
+            });
+        }
+        
+        function updatePlayerList() {
+            const listContainer = document.getElementById('player-list');
+            listContainer.innerHTML = '';
+            players.forEach((player) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'flex justify-between items-center bg-transparent p-2 rounded-lg transition-colors duration-200 hover:bg-gray-800';
+                playerDiv.innerHTML = `
+                    <span>${roleEmojis[player.role] || ''} ${player.name} (${player.role}): ${player.rating}</span>
+                    <button onclick="removePlayer('${player.id}')" class="delete-btn">&times;</button>
+                `;
+                listContainer.appendChild(playerDiv);
+            });
+            document.getElementById('player-count').textContent = players.length;
+        }
+        
+        // Remove player from Firestore
+        async function removePlayer(playerId) {
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, playerId));
+            } catch (error) {
+                console.error("Error removing player: ", error);
+            }
+        }
+
+        // Add player to Firestore
+        async function addPlayer() {
+            const name = document.getElementById('player-name').value.trim();
+            const role = document.getElementById('player-role').value;
+            const rating = parseInt(document.getElementById('player-rating').value, 10);
+            const errorMessage = document.getElementById('error-message');
+
+            if (!name || isNaN(rating) || rating <= 0) {
+                errorMessage.textContent = 'Пожалуйста, заполните все поля корректно.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            errorMessage.classList.add('hidden');
+            
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/players`), {
+                    name,
+                    role,
+                    rating,
+                    created_at: new Date()
+                });
+            } catch (error) {
+                console.error("Error adding player: ", error);
+            }
+            
+            // Clear inputs
+            document.getElementById('player-name').value = '';
+            document.getElementById('player-rating').value = '';
+        }
+        
+        function normalizeRatings(players) {
+            return players.map(player => {
+                const normalizedPlayer = { ...player };
+                const factor = normalizationFactors[player.role] || 1;
+                normalizedPlayer.normalized_rating = player.rating / factor;
+                return normalizedPlayer;
+            });
+        }
+
+        function balanceTeams() {
+            const playersPerTeam = parseInt(document.getElementById('players-per-team').value, 10);
+            const errorMessage = document.getElementById('error-message');
+
+            if (players.length === 0) {
+                errorMessage.textContent = 'Добавьте хотя бы одного игрока.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            if (playersPerTeam <= 0) {
+                errorMessage.textContent = 'Количество игроков в команде должно быть больше 0.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            errorMessage.classList.add('hidden');
+            
+            const normalizedPlayers = normalizeRatings(players);
+            const sortedPlayers = normalizedPlayers.sort((a, b) => b.normalized_rating - a.normalized_rating);
+            
+            const numTeams = Math.ceil(players.length / playersPerTeam);
+            const teams = Array.from({ length: numTeams }, () => []);
+            
+            for (let i = 0; i < sortedPlayers.length; i++) {
+                const teamIndex = i % numTeams;
+                teams[teamIndex].push(sortedPlayers[i]);
+            }
+
+            displayResults(teams, numTeams, playersPerTeam);
+        }
+
+        function displayResults(teams, numTeams, playersPerTeam) {
+            const outputDiv = document.getElementById('results-output');
+            outputDiv.innerHTML = `
+                <p>Всего игроков: ${players.length}</p>
+                <p>Игроков в каждой команде: ${playersPerTeam}</p>
+                <p>Будет сформировано команд: ${numTeams}</p>
+                <br>
+                <h3 class="text-xl font-bold">--- Результаты балансировки ---</h3>
+            `;
+            
+            const allTeamRatings = [];
+            teams.forEach((team, index) => {
+                let totalRating = 0;
+                const teamHtml = team.map(player => {
+                    totalRating += player.rating;
+                    return `<span class="block">${roleEmojis[player.role] || ''} ${player.name} (${player.role}): ${player.rating}</span>`;
+                }).join('');
+                
+                allTeamRatings.push(totalRating);
+                
+                const teamCard = document.createElement('div');
+                teamCard.className = 'team-card';
+                teamCard.innerHTML = `
+                    <h3>Команда ${index + 1}:</h3>
+                    <div class="space-y-2 mt-2">${teamHtml}</div>
+                    <p class="font-bold mt-2">Общий рейтинг: ${totalRating}</p>
+                `;
+                outputDiv.appendChild(teamCard);
+            });
+            
+            if (allTeamRatings.length > 1) {
+                const minRating = Math.min(...allTeamRatings);
+                const maxRating = Math.max(...allTeamRatings);
+                const difference = maxRating - minRating;
+                
+                const differenceP = document.createElement('p');
+                differenceP.className = 'mt-4 text-yellow-400 font-bold';
+                differenceP.innerHTML = `Разница между самым высоким и самым низким рейтингом команды: ${difference}`;
+                outputDiv.appendChild(differenceP);
+            }
+        }
+    </script>
+</body>
+</html>
